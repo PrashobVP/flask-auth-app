@@ -1,109 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Login</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <style>
         body {
-            background: linear-gradient(to right, #6a11cb, #2575fc);
+            /* Vibrant gradient background */
+            background: linear-gradient(135deg, #6a11cb, #2575fc, #e040fb);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
-        .login-container {
-            display: flex;
-            width: 900px;
-            background-color: white;
+        .card {
+            width: 400px;
             border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 30px rgba(101, 41, 255, 0.3);
+            background: white;
         }
-
-        /* Left image section */
-        .login-image {
-            background: url('https://images.unsplash.com/photo-1519389950473-47ba0277781c') no-repeat center center;
-            background-size: cover;
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            padding: 30px;
+        h3.text-primary {
+            color: #6a11cb !important; /* purple shade */
+            font-weight: 700;
         }
-
-        .login-image h2 {
-            font-weight: bold;
-            font-size: 28px;
-            margin-bottom: 10px;
+        .btn-primary {
+            background: #6a11cb;
+            border: none;
+            transition: background 0.3s ease;
         }
-
-        .login-image p {
-            font-size: 16px;
+        .btn-primary:hover {
+            background: #4e0dbf;
         }
-
-        /* Right login form */
-        .login-form {
-            width: 50%;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        .alert {
+            border-radius: 12px;
+            font-weight: 600;
         }
-
-        .login-form h3 {
-            text-align: center;
-            margin-bottom: 25px;
-            color: #2575fc;
+        a {
+            color: #6a11cb;
+            text-decoration: none;
+            font-weight: 600;
         }
-
-        /* Animate card slightly on hover */
-        .login-container:hover {
-            transform: translateX(5px);
-            transition: 0.4s;
+        a:hover {
+            color: #4e0dbf;
+            text-decoration: underline;
         }
-
-        /* Responsive for small screens */
-        @media(max-width: 768px) {
-            .login-container {
-                flex-direction: column;
-                width: 95%;
-            }
-            .login-image, .login-form {
-                width: 100%;
-            }
+        p.mt-3 {
+            font-size: 14px;
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
+<div class="container d-flex justify-content-center align-items-center vh-100">
+  <div class="card shadow p-4">
+    <h3 class="text-center mb-4 text-primary">Login</h3>
 
-<div class="login-container">
-    <!-- Left Image & Text -->
-    <div class="login-image">
-        <h2>Welcome Back!</h2>
-        <p>Sign in to continue to your account</p>
-    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-    <!-- Right Login Form -->
-    <div class="login-form">
-        <h3>Login</h3>
-        <form method="POST">
-            <div class="mb-3">
-                <input type="email" class="form-control" name="email" placeholder="Email" required>
-            </div>
-            <div class="mb-3">
-                <input type="password" class="form-control" name="password" placeholder="Password" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100 mb-3">Login</button>
-            <p class="text-center">
-                Don't have an account? <a href="/signup">Sign up</a>
-            </p>
-        </form>
-    </div>
+    <form method="POST">
+      <div class="mb-3">
+        <input type="email" class="form-control" name="email" placeholder="Email" required>
+      </div>
+      <div class="mb-3">
+        <input type="password" class="form-control" name="password" placeholder="Password" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Login</button>
+      <p class="mt-3 text-center">
+        Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a>
+      </p>
+    </form>
+  </div>
 </div>
-
 </body>
 </html>
