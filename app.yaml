@@ -1,8 +1,0 @@
-runtime: python311
-entrypoint: gunicorn -b :$PORT app:app
-
-env_variables:
-  DB_USER: sqladmin
-  DB_PASS: uae@123$
-  DB_NAME: flask_auth
-  INSTANCE_CONNECTION_NAME: dataengineering-466220:us-central1:sql001lowaus
