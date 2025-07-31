@@ -1,21 +1,19 @@
 from flask import Flask, render_template, request, redirect
 import mysql.connector
 from flask_bcrypt import Bcrypt
-import os
+
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 
-db_user = os.getenv("DB_USER")
-db_pass = os.getenv("DB_PASS")
-db_name = os.getenv("DB_NAME")
-instance_connection_name = os.getenv("INSTANCE_CONNECTION_NAME")
+
 
 db = mysql.connector.connect(
-    user=db_user,
-    password=db_pass,
-    database=db_name,
-    unix_socket=f"/cloudsql/{instance_connection_name}"
+    user="sqladmin",
+    password="uae@123$"
+    database="flask_auth",
+    host="34.10.221.204",
+    port=3306,
 )
 
 cursor = db.cursor(dictionary=True)
