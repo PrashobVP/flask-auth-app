@@ -6,77 +6,143 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <style>
         body {
-            /* Vibrant gradient background */
-            background: linear-gradient(135deg, #6a11cb, #2575fc, #e040fb);
+            margin: 0;
+            padding: 0;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
         }
-        .card {
-            width: 400px;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(101, 41, 255, 0.3);
-            background: white;
+
+        .login-container {
+            display: flex;
+            width: 900px;
+            height: 550px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            background-color: white;
         }
-        h3.text-primary {
-            color: #6a11cb !important; /* purple shade */
+
+        /* Left side - Picture & Text */
+        .login-image {
+            background: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f') no-repeat center center;
+            background-size: cover;
+            width: 50%;
+            position: relative;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .login-image::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .login-image h2,
+        .login-image p {
+            position: relative;
+            z-index: 2;
+        }
+
+        .login-image h2 {
+            font-size: 34px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .login-image p {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* Right side - Login form */
+        .login-form {
+            width: 50%;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-form h3 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #6a11cb;
             font-weight: 700;
         }
+
+        .form-control {
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
         .btn-primary {
-            background: #6a11cb;
+            border-radius: 10px;
+            font-weight: 600;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
             border: none;
-            transition: background 0.3s ease;
         }
+
         .btn-primary:hover {
-            background: #4e0dbf;
+            background: linear-gradient(to right, #4e0dbf, #1d5edc);
         }
-        .alert {
-            border-radius: 12px;
-            font-weight: 600;
-        }
-        a {
-            color: #6a11cb;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        a:hover {
-            color: #4e0dbf;
-            text-decoration: underline;
-        }
-        p.mt-3 {
-            font-size: 14px;
-            font-weight: 500;
+
+        /* Responsive for mobile */
+        @media(max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+                width: 95%;
+                height: auto;
+            }
+            .login-image, .login-form {
+                width: 100%;
+            }
+            .login-image {
+                height: 250px;
+            }
         }
     </style>
 </head>
 <body>
-<div class="container d-flex justify-content-center align-items-center vh-100">
-  <div class="card shadow p-4">
-    <h3 class="text-center mb-4 text-primary">Login</h3>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+<div class="login-container">
+    <!-- Left Image & Text -->
+    <div class="login-image">
+        <h2>Welcome Back!</h2>
+        <p>Login to access your personalized dashboard<br>and manage your profile easily.</p>
+    </div>
 
-    <form method="POST">
-      <div class="mb-3">
-        <input type="email" class="form-control" name="email" placeholder="Email" required>
-      </div>
-      <div class="mb-3">
-        <input type="password" class="form-control" name="password" placeholder="Password" required>
-      </div>
-      <button type="submit" class="btn btn-primary w-100">Login</button>
-      <p class="mt-3 text-center">
-        Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a>
-      </p>
-    </form>
-  </div>
+    <!-- Right Login Form -->
+    <div class="login-form">
+        <h3>Login</h3>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <input type="email" class="form-control" name="email" placeholder="Email" required>
+            <input type="password" class="form-control" name="password" placeholder="Password" required>
+            <button type="submit" class="btn btn-primary w-100 mt-2">Login</button>
+            <p class="mt-3 text-center">
+                Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a>
+            </p>
+        </form>
+    </div>
 </div>
+
 </body>
 </html>
