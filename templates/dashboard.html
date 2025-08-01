@@ -56,7 +56,7 @@
   .section-title {
     font-weight: 700;
     font-size: 20px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     color: #6a11cb;
     border-bottom: 2px solid #6a11cb;
     padding-bottom: 5px;
@@ -89,6 +89,15 @@
     overflow-y: auto;
     padding-right: 10px;
   }
+  textarea.form-control {
+    min-height: 80px;
+    resize: vertical;
+  }
+  .btn-primary, .btn-success {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 8px 25px;
+  }
 </style>
 </head>
 <body>
@@ -104,31 +113,34 @@
   <div class="row">
     <!-- Left: Your Profile (wider) -->
     <div class="col-lg-8 col-md-7">
-      <div class="profile-card">
-        <img src="{{ url_for('static', filename='uploads/' + (user.photo if user.photo else 'default.png')) }}" alt="Profile Picture" class="profile-pic">
-        <h3>{{ user.name }}</h3>
-        <p><strong>Email:</strong> {{ user.email }}</p>
-        <p><strong>Address:</strong> {{ user.address or 'N/A' }}</p>
-        <p><strong>Skills:</strong> {{ user.skills or 'Not specified' }}</p>
-        <p><strong>Biography:</strong> {{ user.bio or 'No biography provided.' }}</p>
-        
-        <div class="mt-4">
-          <div class="section-title">Previous Experience</div>
-          <p>{{ user.experience or 'No experience details provided.' }}</p>
-        </div>
+      <form method="POST" action="{{ url_for('dashboard') }}">
+        <div class="profile-card">
+          <img src="{{ url_for('static', filename='uploads/' + (user.photo if user.photo else 'default.png')) }}" alt="Profile Picture" class="profile-pic">
+          <h3>{{ user.name }}</h3>
+          <p><strong>Email:</strong> {{ user.email }}</p>
+          <p><strong>Address:</strong> {{ user.address or 'N/A' }}</p>
+          <p><strong>Skills:</strong> {{ user.skills or 'Not specified' }}</p>
+          <p><strong>Biography:</strong> {{ user.bio or 'No biography provided.' }}</p>
+          
+          <div class="mt-4">
+            <label class="section-title" for="experience">Previous Experience</label>
+            <textarea class="form-control" id="experience" name="experience" placeholder="Add your previous experience here...">{{ user.experience or '' }}</textarea>
+          </div>
 
-        <div class="mt-4">
-          <div class="section-title">Education</div>
-          <p>{{ user.education or 'No education details provided.' }}</p>
-        </div>
+          <div class="mt-4">
+            <label class="section-title" for="education">Education</label>
+            <textarea class="form-control" id="education" name="education" placeholder="Add your education details here...">{{ user.education or '' }}</textarea>
+          </div>
 
-        <div class="mt-4">
-          <div class="section-title">Aspiration Roles</div>
-          <p>{{ user.aspiration or 'No aspiration specified.' }}</p>
-        </div>
+          <div class="mt-4">
+            <label class="section-title" for="aspiration">Aspiration Roles</label>
+            <textarea class="form-control" id="aspiration" name="aspiration" placeholder="Your aspiration roles...">{{ user.aspiration or '' }}</textarea>
+          </div>
 
-        <a href="{{ url_for('profile') }}" class="btn btn-primary w-100 mt-3">Edit Profile</a>
-      </div>
+          <button type="submit" class="btn btn-success w-100 mt-3">Save Changes</button>
+          <a href="{{ url_for('profile') }}" class="btn btn-primary w-100 mt-2">Edit Full Profile</a>
+        </div>
+      </form>
     </div>
 
     <!-- Right: Explore Other Techies (narrower) -->

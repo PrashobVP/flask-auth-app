@@ -77,18 +77,33 @@ def login():
     return render_template('login.html')
 
 # Dashboard
-@app.route('/dashboard')
+@app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user_id' not in session:
         flash("Please log in first.", "warning")
         return redirect(url_for('login'))
 
     user_id = session['user_id']
+
+    if request.method == 'POST':
+        experience = request.form.get('experience', '').strip()
+        education = request.form.get('education', '').strip()
+        aspiration = request.form.get('aspiration', '').strip()
+
+        cursor.execute("""
+            UPDATE users 
+            SET experience=%s, education=%s, aspiration=%s
+            WHERE id=%s
+        """, (experience, education, aspiration, user_id))
+        db.commit()
+        flash("Profile info updated successfully.", "success")
+        return redirect(url_for('dashboard'))
+
+    # GET method - fetch user data and all users
     cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))
     user = cursor.fetchone()
 
-    # Fetch all users except the current one (optional)
-    cursor.execute("SELECT id, name, skills, photo FROM users WHERE id != %s", (user_id,))
+    cursor.execute("SELECT * FROM users")
     all_users = cursor.fetchall()
 
     return render_template('dashboard.html', user=user, all_users=all_users)
