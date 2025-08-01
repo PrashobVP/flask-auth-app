@@ -12,9 +12,9 @@ bcrypt = Bcrypt(app)
 # MySQL connection
 db = mysql.connector.connect(
     user="sqladmin",
-    password="uae@123$",
+    password="Ponnu@2014$",
     database="flask_auth",
-    host="34.10.221.204",
+    host="localhost",
     port=3306
 )
 cursor = db.cursor(dictionary=True)
