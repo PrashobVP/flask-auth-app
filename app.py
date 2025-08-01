@@ -6,7 +6,7 @@ import os
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Replace with a strong secret key
+app.secret_key = 'your_secret_key_here'  # Use a strong key
 bcrypt = Bcrypt(app)
 
 # MySQL connection
@@ -19,8 +19,13 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor(dictionary=True)
 
+# Upload folder
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static/uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def root():
@@ -71,7 +76,25 @@ def login():
 
     return render_template('login.html')
 
-# Profile edit page (home)
+# Dashboard
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        flash("Please log in first.", "warning")
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+    cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))
+    user = cursor.fetchone()
+
+    # Fetch all users except the current one (optional)
+    cursor.execute("SELECT id, name, skills, photo FROM users WHERE id != %s", (user_id,))
+    all_users = cursor.fetchall()
+
+    return render_template('dashboard.html', user=user, all_users=all_users)
+
+
+# Profile Update
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if 'user_id' not in session:
@@ -84,49 +107,58 @@ def profile():
         email = request.form['email'].strip().lower()
         address = request.form['address'].strip()
         bio = request.form['bio'].strip()
+        skills = request.form.get('skills', '').strip()
+        aspiration = request.form.get('aspiration', '').strip()
 
+        # Profile Photo
         photo_file = request.files.get('photo')
         photo_filename = None
-
         if photo_file and photo_file.filename != '':
             photo_filename = secure_filename(photo_file.filename)
             photo_file.save(os.path.join(UPLOAD_FOLDER, photo_filename))
 
-        if photo_filename:
-            sql = "UPDATE users SET email=%s, address=%s, bio=%s, photo=%s WHERE id=%s"
-            cursor.execute(sql, (email, address, bio, photo_filename, user_id))
-        else:
-            sql = "UPDATE users SET email=%s, address=%s, bio=%s WHERE id=%s"
-            cursor.execute(sql, (email, address, bio, user_id))
+        # CV Upload
+        cv_file = request.files.get('cv_file')
+        cv_filename = None
+        if cv_file and cv_file.filename != '' and allowed_file(cv_file.filename):
+            cv_filename = secure_filename(cv_file.filename)
+            cv_file.save(os.path.join(UPLOAD_FOLDER, cv_filename))
 
+        # Prepare SQL
+        sql = """
+            UPDATE users 
+            SET email=%s, address=%s, bio=%s, skills=%s, aspiration=%s
+        """
+        values = [email, address, bio, skills, aspiration]
+
+        if photo_filename:
+            sql += ", photo=%s"
+            values.append(photo_filename)
+
+        if cv_filename:
+            sql += ", cv_file=%s"
+            values.append(cv_filename)
+
+        sql += " WHERE id=%s"
+        values.append(user_id)
+
+        cursor.execute(sql, tuple(values))
         db.commit()
+
         flash("Profile updated successfully.", "success")
         return redirect(url_for('dashboard'))
 
-    cursor.execute("SELECT email, address, bio, photo FROM users WHERE id=%s", (user_id,))
+    cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))
     user = cursor.fetchone()
 
     return render_template('profile.html', user=user)
 
-# Dashboard page - read-only profile view
-@app.route('/dashboard')
-def dashboard():
-    if 'user_id' not in session:
-        flash("Please log in first.", "warning")
-        return redirect(url_for('login'))
-
-    user_id = session['user_id']
-    cursor.execute("SELECT email, address, bio, photo FROM users WHERE id=%s", (user_id,))
-    user = cursor.fetchone()
-    return render_template('dashboard.html', user=user)
-
-# Logout route
+# Logout
 @app.route('/logout')
 def logout():
     session.clear()
     flash("Logged out successfully.", "info")
     return redirect(url_for('login'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)
