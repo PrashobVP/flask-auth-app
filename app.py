@@ -1,23 +1,28 @@
 from flask import Flask, render_template, request, redirect, flash, session, url_for
-import mysql.connector
 from flask_bcrypt import Bcrypt
+import mysql.connector
 from mysql.connector.errors import IntegrityError
-import os
 from werkzeug.utils import secure_filename
+import os
+from dotenv import load_dotenv  # NEW
+
+# Load environment variables from .env
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Use a strong key
+app.secret_key = os.getenv("SECRET_KEY")  # from .env
 bcrypt = Bcrypt(app)
 
 # MySQL connection
 db = mysql.connector.connect(
-    user="sqladmin",
-    password="Ponnu@2014$",
-    database="flask_auth",
-    host="localhost",
-    port=3306
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    database=os.getenv("DB_NAME"),
+    host=os.getenv("DB_HOST"),
+    port=int(os.getenv("DB_PORT"))
 )
 cursor = db.cursor(dictionary=True)
+
 
 # Upload folder
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static/uploads')
