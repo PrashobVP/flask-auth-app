@@ -1,16 +1,27 @@
 from flask import Flask, render_template, request, redirect, flash, session, url_for
 from flask_bcrypt import Bcrypt
+
+from flask_mail import Mail, Message
 import mysql.connector
 from mysql.connector.errors import IntegrityError
 from werkzeug.utils import secure_filename
-import os
+from dotenv import load_dotenv
+import os, random
 
-
-
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")  # from .env
+app.secret_key = os.getenv("SECRET_KEY")
+
 bcrypt = Bcrypt(app)
+
+# Configure Flask-Mail
+app.config['MAIL_SERVER'] = os.getenv("MAIL_SERVER")
+app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT"))
+app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS") == "True"
+app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
+app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
+mail = Mail(app)
 
 # MySQL connection
 db = mysql.connector.connect(
@@ -31,20 +42,41 @@ ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def send_otp(email):
+    otp = random.randint(100000, 999999)
+    session['otp'] = str(otp)
+    session['otp_email'] = email
+
+    msg = Message("Your ByteProfiles OTP", sender=app.config['MAIL_USERNAME'], recipients=[email])
+    msg.body = f"Your OTP is {otp}. It is valid for 5 minutes."
+    mail.send(msg)
+    return otp
+
 @app.route('/')
 def root():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-# Signup route
+# -------------------- SIGNUP --------------------
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
+        # OTP Step
+        if 'otp' in request.form:
+            entered_otp = request.form['otp']
+            email = request.form['email']
+            if session.get('otp') == entered_otp and session.get('otp_email') == email:
+                flash("Signup successful! Please login.", "success")
+                return redirect(url_for('login'))
+            else:
+                flash("Invalid OTP. Try again.", "danger")
+                return render_template('signup.html', otp_required=True, email=email)
+
+        # Signup Step
         name = request.form['name'].strip()
         email = request.form['email'].strip().lower()
         password = request.form['password']
-
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
         try:
@@ -53,17 +85,34 @@ def signup():
                 (name, email, hashed_password)
             )
             db.commit()
-            flash("Signup successful! Please login.", "success")
-            return redirect(url_for('login'))
+            send_otp(email)
+            flash("OTP sent to your email. Verify to complete signup.", "info")
+            return render_template('signup.html', otp_required=True, email=email)
         except IntegrityError:
             flash("Email already exists. Try logging in.", "danger")
 
-    return render_template('signup.html')
+    return render_template('signup.html', otp_required=False)
 
-# Login route
+# -------------------- LOGIN --------------------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        # OTP Step
+        if 'otp' in request.form:
+            entered_otp = request.form['otp']
+            email = request.form['email']
+            if session.get('otp') == entered_otp and session.get('otp_email') == email:
+                cursor.execute("SELECT * FROM users WHERE email=%s", (email,))
+                user = cursor.fetchone()
+                if user:
+                    session['user_id'] = user['id']
+                    session['user_name'] = user['name']
+                    flash(f"Welcome back, {user['name']}!", "success")
+                    return redirect(url_for('dashboard'))
+            flash("Invalid OTP. Try again.", "danger")
+            return render_template('login.html', otp_required=True, email=email)
+
+        # Login Step
         email = request.form['email'].strip().lower()
         password = request.form['password']
 
@@ -71,14 +120,13 @@ def login():
         user = cursor.fetchone()
 
         if user and bcrypt.check_password_hash(user['password'], password):
-            session['user_id'] = user['id']
-            session['user_name'] = user['name']
-            flash(f"Welcome back, {user['name']}!", "success")
-            return redirect(url_for('dashboard'))
+            send_otp(email)
+            flash("OTP sent to your email for verification.", "info")
+            return render_template('login.html', otp_required=True, email=email)
         else:
             flash("Invalid email or password.", "danger")
 
-    return render_template('login.html')
+    return render_template('login.html', otp_required=False)
 
 # Dashboard
 @app.route('/dashboard', methods=['GET', 'POST'])
