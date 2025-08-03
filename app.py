@@ -4,10 +4,9 @@ import mysql.connector
 from mysql.connector.errors import IntegrityError
 from werkzeug.utils import secure_filename
 import os
-from dotenv import load_dotenv  # NEW
 
-# Load environment variables from .env
-load_dotenv()
+
+
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")  # from .env
