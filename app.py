@@ -11,19 +11,35 @@ import os, random
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
+
+# Load SECRET_KEY with error if missing
+secret_key = os.getenv("SECRET_KEY")
+if not secret_key:
+    raise RuntimeError("SECRET_KEY environment variable not set")
+app.secret_key = secret_key
 
 bcrypt = Bcrypt(app)
 
-# Configure Flask-Mail
-app.config['MAIL_SERVER'] = os.getenv("MAIL_SERVER")
-app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT"))
-app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS") == "True"
+# Helper to parse boolean env vars
+def str_to_bool(s):
+    return s.lower() in ('true', '1', 'yes') if s else False
+
+# Configure Flask-Mail with safe env parsing and defaults
+mail_server = os.getenv("MAIL_SERVER")
+mail_port = os.getenv("MAIL_PORT")
+if mail_port is None:
+    raise RuntimeError("MAIL_PORT environment variable not set")
+
+app.config['MAIL_SERVER'] = mail_server or "smtp.gmail.com"
+app.config['MAIL_PORT'] = int(mail_port)
+app.config['MAIL_USE_TLS'] = str_to_bool(os.getenv("MAIL_USE_TLS"))
+app.config['MAIL_USE_SSL'] = str_to_bool(os.getenv("MAIL_USE_SSL"))
 app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
 app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
+
 mail = Mail(app)
 
-# MySQL connection
+# MySQL connection (same)
 db = mysql.connector.connect(
     user=os.getenv("DB_USER"),
     password=os.getenv("DB_PASSWORD"),
@@ -33,24 +49,25 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor(dictionary=True)
 
-
-# Upload folder
-UPLOAD_FOLDER = os.path.join(app.root_path, 'static/uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# ...
 
 def send_otp(email):
     otp = random.randint(100000, 999999)
     session['otp'] = str(otp)
     session['otp_email'] = email
 
-    msg = Message("Your ByteProfiles OTP", sender=app.config['MAIL_USERNAME'], recipients=[email])
-    msg.body = f"Your OTP is {otp}. It is valid for 5 minutes."
-    mail.send(msg)
+    try:
+        msg = Message("Your ByteProfiles OTP", sender=app.config['MAIL_USERNAME'], recipients=[email])
+        msg.body = f"Your OTP is {otp}. It is valid for 5 minutes."
+        mail.send(msg)
+    except Exception as e:
+        app.logger.error(f"Failed to send OTP email: {e}")
+        flash("Failed to send OTP email. Please try again later.", "danger")
+        return None
+
     return otp
+
+# rest of your routes unchanged...
 
 @app.route('/')
 def root():
