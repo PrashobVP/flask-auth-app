@@ -60,6 +60,13 @@
     color: #6a11cb;
     border-bottom: 2px solid #6a11cb;
     padding-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .section-title button {
+    font-size: 14px;
+    padding: 4px 12px;
   }
   .techie-card {
     background: white;
@@ -122,23 +129,37 @@
           <p><strong>Skills:</strong> {{ user.skills or 'Not specified' }}</p>
           <p><strong>Biography:</strong> {{ user.bio or 'No biography provided.' }}</p>
           
+          <!-- Experience -->
           <div class="mt-4">
-            <label class="section-title" for="experience">Previous Experience</label>
-            <textarea class="form-control" id="experience" name="experience" placeholder="Add your previous experience here...">{{ user.experience or '' }}</textarea>
+            <label class="section-title" for="experience">Previous Experience
+              <button type="button" class="btn btn-primary btn-sm" id="experience-edit-btn">Edit</button>
+              <button type="submit" class="btn btn-success btn-sm" id="experience-save-btn" style="display:none;">Save</button>
+            </label>
+            <div id="experience-view">{{ user.experience or 'No experience added yet.'|replace('\n','<br>')|safe }}</div>
+            <textarea class="form-control" id="experience" name="experience" style="display:none;">{{ user.experience or '' }}</textarea>
           </div>
 
+          <!-- Education -->
           <div class="mt-4">
-            <label class="section-title" for="education">Education</label>
-            <textarea class="form-control" id="education" name="education" placeholder="Add your education details here...">{{ user.education or '' }}</textarea>
+            <label class="section-title" for="education">Education
+              <button type="button" class="btn btn-primary btn-sm" id="education-edit-btn">Edit</button>
+              <button type="submit" class="btn btn-success btn-sm" id="education-save-btn" style="display:none;">Save</button>
+            </label>
+            <div id="education-view">{{ user.education or 'No education details added yet.'|replace('\n','<br>')|safe }}</div>
+            <textarea class="form-control" id="education" name="education" style="display:none;">{{ user.education or '' }}</textarea>
           </div>
 
+          <!-- Aspiration -->
           <div class="mt-4">
-            <label class="section-title" for="aspiration">Aspiration Roles</label>
-            <textarea class="form-control" id="aspiration" name="aspiration" placeholder="Your aspiration roles...">{{ user.aspiration or '' }}</textarea>
+            <label class="section-title" for="aspiration">Aspiration Roles
+              <button type="button" class="btn btn-primary btn-sm" id="aspiration-edit-btn">Edit</button>
+              <button type="submit" class="btn btn-success btn-sm" id="aspiration-save-btn" style="display:none;">Save</button>
+            </label>
+            <div id="aspiration-view">{{ user.aspiration or 'No aspiration roles added yet.'|replace('\n','<br>')|safe }}</div>
+            <textarea class="form-control" id="aspiration" name="aspiration" style="display:none;">{{ user.aspiration or '' }}</textarea>
           </div>
 
-          <button type="submit" class="btn btn-success w-100 mt-3">Save Changes</button>
-          <a href="{{ url_for('profile') }}" class="btn btn-primary w-100 mt-2">Edit Full Profile</a>
+          <a href="{{ url_for('profile') }}" class="btn btn-primary w-100 mt-4">Edit Full Profile</a>
         </div>
       </form>
     </div>
@@ -164,6 +185,25 @@
     </div>
   </div>
 </div>
+
+<script>
+  function setupInlineEdit(section) {
+    const view = document.getElementById(section + '-view');
+    const edit = document.getElementById(section);
+    const editBtn = document.getElementById(section + '-edit-btn');
+    const saveBtn = document.getElementById(section + '-save-btn');
+
+    editBtn.addEventListener('click', () => {
+      view.style.display = 'none';
+      edit.style.display = 'block';
+      editBtn.style.display = 'none';
+      saveBtn.style.display = 'inline-block';
+      edit.focus();
+    });
+  }
+
+  ['experience', 'education', 'aspiration'].forEach(setupInlineEdit);
+</script>
 
 </body>
 </html>
