@@ -1,12 +1,12 @@
 from flask import Flask, render_template, request, redirect, flash, session, url_for
 from flask_bcrypt import Bcrypt
-
 from flask_mail import Mail, Message
 import mysql.connector
 from mysql.connector.errors import IntegrityError
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import os, random
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 load_dotenv()
 
@@ -23,6 +23,9 @@ app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
 app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
 mail = Mail(app)
 
+# Token serializer for password reset
+serializer = URLSafeTimedSerializer(app.secret_key)
+
 # MySQL connection
 db = mysql.connector.connect(
     user=os.getenv("DB_USER"),
@@ -32,7 +35,6 @@ db = mysql.connector.connect(
     port=int(os.getenv("DB_PORT"))
 )
 cursor = db.cursor(dictionary=True)
-
 
 # Upload folder
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static/uploads')
@@ -77,6 +79,12 @@ def signup():
         name = request.form['name'].strip()
         email = request.form['email'].strip().lower()
         password = request.form['password']
+
+        # Basic validation
+        if not name or not email or not password:
+            flash("Please fill in all required fields.", "danger")
+            return render_template('signup.html', otp_required=False)
+
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
         try:
@@ -116,6 +124,11 @@ def login():
         email = request.form['email'].strip().lower()
         password = request.form['password']
 
+        # Basic validation
+        if not email or not password:
+            flash("Please fill in all required fields.", "danger")
+            return render_template('login.html', otp_required=False)
+
         cursor.execute("SELECT * FROM users WHERE email=%s", (email,))
         user = cursor.fetchone()
 
@@ -128,7 +141,66 @@ def login():
 
     return render_template('login.html', otp_required=False)
 
-# Dashboard
+# -------------------- FORGOT PASSWORD --------------------
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        if not email:
+            flash("Please enter your email.", "danger")
+            return render_template('forgot_password.html')
+
+        cursor.execute("SELECT * FROM users WHERE email=%s", (email,))
+        user = cursor.fetchone()
+        if not user:
+            flash("Email not found.", "danger")
+            return render_template('forgot_password.html')
+
+        token = serializer.dumps(email, salt='password-reset-salt')
+        reset_url = url_for('reset_password', token=token, _external=True)
+
+        msg = Message("Password Reset Request",
+                      sender=app.config['MAIL_USERNAME'],
+                      recipients=[email])
+        msg.body = f"To reset your password, click the following link:\n{reset_url}\n\nIf you didn't request this, ignore this email."
+        mail.send(msg)
+
+        flash("Password reset link sent to your email.", "info")
+        return redirect(url_for('login'))
+
+    return render_template('forgot_password.html')
+
+# -------------------- RESET PASSWORD --------------------
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)  # 1 hour expiry
+    except (SignatureExpired, BadSignature):
+        flash("The password reset link is invalid or has expired.", "danger")
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST':
+        password = request.form.get('password', '').strip()
+        confirm = request.form.get('confirm', '').strip()
+
+        if not password or not confirm:
+            flash("Please fill in both password fields.", "danger")
+            return render_template('reset_password.html', token=token)
+
+        if password != confirm:
+            flash("Passwords do not match.", "danger")
+            return render_template('reset_password.html', token=token)
+
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        cursor.execute("UPDATE users SET password=%s WHERE email=%s", (hashed_password, email))
+        db.commit()
+
+        flash("Your password has been updated. Please log in.", "success")
+        return redirect(url_for('login'))
+
+    return render_template('reset_password.html', token=token)
+
+# -------------------- DASHBOARD --------------------
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if 'user_id' not in session:
@@ -160,8 +232,7 @@ def dashboard():
 
     return render_template('dashboard.html', user=user, all_users=all_users)
 
-
-# Profile Update
+# -------------------- PROFILE --------------------
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     if 'user_id' not in session:
@@ -220,7 +291,7 @@ def profile():
 
     return render_template('profile.html', user=user)
 
-# Logout
+# -------------------- LOGOUT --------------------
 @app.route('/logout')
 def logout():
     session.clear()
